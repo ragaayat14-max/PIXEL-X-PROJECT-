@@ -1,1 +1,52 @@
+name: Build PIXEL X PROJECT APK
 
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'project-source.zip'
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download project
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Extract project
+        run: |
+          unzip -q project-source.zip -d source
+          test -f source/PIXEL_X_ANDROID_FIXED/settings.gradle
+
+      - name: Build APK
+        working-directory: source/PIXEL_X_ANDROID_FIXED
+        run: gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PIXEL-X-PROJECT-APK
+          path: source/PIXEL_X_ANDROID_FIXED/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
